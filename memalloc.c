@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 
 typedef char ALIGN[16];
 
@@ -19,7 +20,9 @@ header_t* tail;
 
 pthread_mutex_t global_malloc_lock;
 
-
+/**
+ * Retrieves first free block.
+ */
 header_t *get_free_block(size_t size){
     header_t *curr = head;
     
@@ -34,10 +37,9 @@ header_t *get_free_block(size_t size){
 }
 
 /**
- * Malloc.
- * Allocates memory with a given size
+ * Allocates memory with a given size.
  */
-void *malloc(size_t size){
+void* malloc(size_t size){
     size_t total_size;
     void *block;
     header_t *header;
@@ -80,7 +82,6 @@ void *malloc(size_t size){
 }
 
 /**
- * Free.
  * Releases memory if at the end of the heap, else marks it to be freed.
  */
 void free(void* block){
@@ -125,7 +126,6 @@ void free(void* block){
 }
 
 /**
- * calloc
  * Takes in number of elements and size of each element, returns memory of size num*nsize and initially set to zero.
  */
 void* calloc(size_t num, size_t nsize){
@@ -153,6 +153,28 @@ void* calloc(size_t num, size_t nsize){
     return block;
 }
 
-int main(){
-    printf("Hello\n");
+/**
+ * Reallocates block to size. 
+ */
+void* realloc(void *block, size_t size){
+    header_t *header;  
+    void *ret;
+
+    if (!block || !size){
+        return malloc(size);
+    }
+
+    header = (header_t*) block - 1;
+    if (header->s.size >= size){
+        return block;
+    }
+
+    ret = malloc(size);
+
+    if (ret){
+        memcpy(ret, block, header->s.size);
+        free(block);
+    }
+
+    return ret;
 }
